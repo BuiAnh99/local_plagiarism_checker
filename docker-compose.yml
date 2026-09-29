@@ -1,0 +1,19 @@
+services:
+  plagiarism-checker:
+    build:
+      context: .
+      args:
+        INSTALL_SEMANTIC: 'true'
+    ports:
+      - '8000:8000'
+    environment:
+      PLAGIARISM_STORE: /app/data
+      EMBEDDING_MODEL_PATH: /app/models/vietnamese-sbert
+      SEMANTIC_MODEL_PATH: /app/models/vietnamese-sbert
+      ONLINE_SEARCH_RESULTS: '30'
+      OPENAI_EVAL_MODEL: ${OPENAI_EVAL_MODEL:-gpt-5.5}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    volumes:
+      - ./data:/app/data
+      - ./corpus:/app/corpus
+      - ./models:/app/models

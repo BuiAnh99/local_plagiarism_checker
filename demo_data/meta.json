@@ -1,0 +1,11 @@
+{
+  "corpus_dir": "/mnt/data/local_plagiarism_checker/examples/corpus",
+  "store_dir": "/mnt/data/local_plagiarism_checker/demo_data",
+  "documents_indexed": 3,
+  "chunks_indexed": 3,
+  "chunk_size": 220,
+  "chunk_overlap": 70,
+  "semantic_enabled": false,
+  "semantic_model_path": "",
+  "skipped": []
+}

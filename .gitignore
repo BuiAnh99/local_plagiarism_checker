@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+.pytest_cache/
+data/
+*.pyc
+*.pyo
+*.log
+~$*
+corpus/
+models/
+tests/.tmp_store/

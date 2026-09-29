@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Local Plagiarism Checker</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f7f7fb; color: #1c1c1c; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    .card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-bottom: 20px; }
+    h1, h2, h3 { margin-top: 0; }
+    textarea { width: 100%; min-height: 200px; padding: 12px; border-radius: 10px; border: 1px solid #ccc; resize: vertical; box-sizing: border-box; }
+    input[type="file"] { margin: 10px 0 16px; }
+    button { background: #111827; color: white; border: none; border-radius: 10px; padding: 12px 18px; cursor: pointer; }
+    .muted { color: #666; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+    .metric { background: #f2f4f7; padding: 12px; border-radius: 10px; }
+    .score-high { color: #9a3412; font-weight: bold; }
+    .score-medium { color: #92400e; font-weight: bold; }
+    .score-low { color: #166534; font-weight: bold; }
+    .passage { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+    .passage > div { background: #fafafa; border: 1px solid #ececec; border-radius: 10px; padding: 12px; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; border-bottom: 1px solid #eee; padding: 8px; }
+    .error { background: #fef2f2; color: #991b1b; padding: 10px 12px; border-radius: 10px; }
+    .warning { background: #fffbeb; color: #92400e; padding: 10px 12px; border-radius: 10px; }
+    .source-list { margin: 0; padding-left: 20px; }
+    .source-list li { margin-bottom: 10px; }
+    @media (max-width: 800px) { .passage { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>Local Plagiarism Checker</h1>
+      <p class="muted">Chạy hoàn toàn local. Hỗ trợ <strong>TXT, MD, DOCX, PDF</strong>. Mặc định dùng <strong>word TF-IDF + char n-gram TF-IDF</strong>, phù hợp cho tiếng Việt. Có thể bật thêm semantic model local bằng <span class="mono">SEMANTIC_MODEL_PATH</span>.</p>
+      {% if overview.meta %}
+      <div class="grid">
+        <div class="metric"><strong>{{ overview.meta.documents_indexed }}</strong><br/>Tài liệu đã index</div>
+        <div class="metric"><strong>{{ overview.meta.chunks_indexed }}</strong><br/>Chunk đã index</div>
+        <div class="metric"><strong>{{ overview.meta.chunk_size }}</strong><br/>Kích thước chunk</div>
+        <div class="metric"><strong>{{ overview.meta.chunk_overlap }}</strong><br/>Độ chồng lấn</div>
+      </div>
+      <p class="muted">Store: <span class="mono">{{ overview.meta.store_dir }}</span></p>
+      {% else %}
+      <div class="error">Chưa có index hoặc không đọc được store hiện tại. Kiểm tra lại biến <span class="mono">PLAGIARISM_STORE</span> và chạy lệnh index trước.</div>
+      {% if overview.error %}<p class="muted mono">{{ overview.error }}</p>{% endif %}
+      {% endif %}
+      {% if overview.semantic_warning %}
+      <p class="error">Semantic model không sẵn sàng: {{ overview.semantic_warning }}</p>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2>Kiểm tra một văn bản</h2>
+      {% if error %}<div class="error">{{ error }}</div>{% endif %}
+      <form action="/check" method="post" enctype="multipart/form-data">
+        <label>Dán văn bản trực tiếp</label>
+        <textarea name="text" placeholder="Dán bài viết cần kiểm tra ở đây...">{{ text_input }}</textarea>
+        <p class="muted">Hoặc tải tệp lên</p>
+        <input type="file" name="file" accept=".txt,.md,.doc,.docx,.pdf" />
+        <br/>
+        <button type="submit">Chạy kiểm tra</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Kiểm tra nhiều tài liệu</h2>
+      <form action="/batch-check-files" method="post" enctype="multipart/form-data">
+        <input type="file" name="files" accept=".txt,.md,.doc,.docx,.pdf" multiple />
+        <br/>
+        <button type="submit">Chạy kiểm tra và xuất Word</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Đánh giá sáng kiến bằng GPT online</h2>
+      <p class="muted">Hệ thống sẽ lấy tên sáng kiến, tạo truy vấn online, quét khoảng 20-30 kết quả đầu tiên và chấm theo rubric 100 điểm.</p>
+      <form action="/evaluate-online" method="post" enctype="multipart/form-data">
+        <label>Dán văn bản trực tiếp</label>
+        <textarea name="text" placeholder="Dán bản mô tả sáng kiến cần đánh giá online...">{{ text_input }}</textarea>
+        <p class="muted">Hoặc tải tệp lên</p>
+        <input type="file" name="file" accept=".txt,.md,.doc,.docx,.pdf" />
+        <p class="muted">Số kết quả online cần quét</p>
+        <input type="number" name="max_results" min="20" max="30" value="30" />
+        <br/><br/>
+        <button type="submit">Đánh giá online</button>
+      </form>
+    </div>
+
+    {% if results %}
+    <div class="card">
+      <h2>Kết quả kiểm tra</h2>
+      <p class="muted">Tệp: <strong>{{ results.query.filename }}</strong> · {{ results.query.word_count }} từ · {{ results.query.chunk_count }} chunk</p>
+      {% if results.semantic_used %}
+      <p class="muted">Đang dùng semantic model local.</p>
+      {% endif %}
+      {% if not results.significant_hits %}
+      <p class="muted">Không có match nào vượt ngưỡng nghi ngờ. Danh sách dưới đây là các tài liệu gần nhất để tham khảo.</p>
+      {% endif %}
+    </div>
+
+      {% for match in results.matches %}
+      <div class="card">
+        <h3>{{ match.filename }}</h3>
+        <p class="mono">{{ match.path }}</p>
+        <p>
+          {% if match.risk == 'High' %}
+            <span class="score-high">{{ match.score_percent }}% · {{ match.risk }}</span>
+          {% elif match.risk == 'Medium' %}
+            <span class="score-medium">{{ match.score_percent }}% · {{ match.risk }}</span>
+          {% else %}
+            <span class="score-low">{{ match.score_percent }}% · {{ match.risk }}</span>
+          {% endif %}
+        </p>
+        <div class="grid">
+          <div class="metric">Top chunk avg<br/><strong>{{ match.metrics.top_chunk_avg }}</strong></div>
+          <div class="metric">Chunk coverage<br/><strong>{{ match.metrics.query_chunk_coverage }}</strong></div>
+          <div class="metric">Shingle overlap<br/><strong>{{ match.metrics.shingle_overlap }}</strong></div>
+          <div class="metric">Passage coverage<br/><strong>{{ match.metrics.passage_coverage }}</strong></div>
+        </div>
+        {% if match.passages %}
+          <h4>Đoạn văn trùng / rất giống</h4>
+          {% for passage in match.passages %}
+          <div class="passage">
+            <div>
+              <strong>Văn bản kiểm tra</strong>
+              <p>{{ passage.query_excerpt }}</p>
+            </div>
+            <div>
+              <strong>Nguồn trong corpus</strong>
+              <p>{{ passage.source_excerpt }}</p>
+              {% if passage.section_title %}<p class="muted">{{ passage.section_title }}</p>{% endif %}
+              <p class="muted">Chunk {{ passage.source_chunk_index }} · {{ passage.score }}%</p>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="muted">Không có passage-level match rõ ràng, nhưng tài liệu này có độ gần nội dung cao ở mức chunk.</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+    {% endif %}
+
+    {% if batch_results %}
+    <div class="card">
+      <h2>Kết quả kiểm tra nhiều tài liệu</h2>
+      <table>
+        <thead>
+          <tr><th>Tài liệu</th><th>Điểm cao nhất</th><th>Số nguồn</th><th>Báo cáo Word</th></tr>
+        </thead>
+        <tbody>
+          {% for item in batch_results %}
+          <tr>
+            <td>{{ item.filename }}</td>
+            {% if item.error %}
+              <td colspan="3" class="error">{{ item.error }}</td>
+            {% else %}
+              <td>{{ item.score }}%</td>
+              <td>{{ item.matches }}</td>
+              <td><a href="/reports/{{ item.report_name }}">Tải báo cáo</a></td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    {% if online_result %}
+    <div class="card">
+      <h2>Kết quả đánh giá online</h2>
+      {% if online_result.status == 'blocked' %}
+        <div class="warning">{{ online_result.error }}</div>
+      {% else %}
+        <p class="muted">Tên sáng kiến: <strong>{{ online_result.title }}</strong></p>
+        <div class="grid">
+          <div class="metric">Tổng điểm<br/><strong>{{ online_result.rubric.total_score }}/100</strong></div>
+          <div class="metric">Tính mới, sáng tạo<br/><strong>{{ online_result.rubric.novelty_creativity.score }}/30</strong></div>
+          <div class="metric">Hiệu quả, lợi ích<br/><strong>{{ online_result.rubric.effectiveness_benefits.score }}/40</strong></div>
+          <div class="metric">Khả năng nhân rộng<br/><strong>{{ online_result.rubric.scalability.score }}/30</strong></div>
+        </div>
+
+        <h3>Nhận xét</h3>
+        <p>{{ online_result.final_comment }}</p>
+
+        <h3>Nguồn online tương tự</h3>
+        {% if online_result.online_scan.similar_sources %}
+          <ol class="source-list">
+            {% for source in online_result.online_scan.similar_sources %}
+            <li>
+              <strong>{{ source.title }}</strong>
+              <div class="mono">{{ source.url }}</div>
+              <p>{{ source.similarity_reason }}</p>
+              <p class="muted">Mức rủi ro: {{ source.risk_level }}</p>
+            </li>
+            {% endfor %}
+          </ol>
+        {% else %}
+          <p class="muted">Không ghi nhận nguồn online tương tự rõ ràng trong các kết quả đã quét.</p>
+        {% endif %}
+
+        {% if online_result.embedding_comparison %}
+        <h3>So sánh embedding online</h3>
+        <p class="muted">Phương pháp: {{ online_result.embedding_comparison.method }} · Max similarity: {{ online_result.embedding_comparison.max_similarity }}</p>
+        {% endif %}
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</body>
+</html>

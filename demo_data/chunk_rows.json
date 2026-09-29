@@ -1,0 +1,29 @@
+[
+  {
+    "chunk_id": 1,
+    "doc_id": 1,
+    "doc_filename": "bai_goc_01.txt",
+    "chunk_index": 0,
+    "start_token": 0,
+    "end_token": 83,
+    "token_count": 83
+  },
+  {
+    "chunk_id": 2,
+    "doc_id": 2,
+    "doc_filename": "bai_goc_02.txt",
+    "chunk_index": 0,
+    "start_token": 0,
+    "end_token": 59,
+    "token_count": 59
+  },
+  {
+    "chunk_id": 3,
+    "doc_id": 3,
+    "doc_filename": "bai_goc_03.txt",
+    "chunk_index": 0,
+    "start_token": 0,
+    "end_token": 49,
+    "token_count": 49
+  }
+]

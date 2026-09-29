@@ -1,0 +1,4 @@
+python cli.py index --corpus ./corpus --store ./data (chunk và index)
+uvicorn app.api:app --reload (restart server)
+del data\*.* (xóa thư mục data khi cần chunk và embedding lại)
+.\.venv\Scripts\Activate.ps1 (mở venv)
